@@ -1,0 +1,11 @@
+﻿<?xml version="1.0"?>
+<NugetConfiguration>
+  <OnlyProjects>
+    
+  </OnlyProjects>
+  <DoNotIncludeProjects>
+    <!--Project Path from the solution directory so it could be project.csprojs or directory\project.csproj-->
+    <ProjectPath>SampleDictionary\SampleProject.csproj</ProjectPath>
+    <ProjectPath>Configuration\Configuration.csproj</ProjectPath>
+  </DoNotIncludeProjects>
+</NugetConfiguration>
