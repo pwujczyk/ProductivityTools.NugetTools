@@ -13,7 +13,7 @@ function FindSolutionDirectory($path)
     {
         $path = CurrentPath
     }
-    Write-Host "FindSolutionDirectory $path"
+    #Write-Host "FindSolutionDirectory $path"
     $nugetPath="$path\.nuget"
 	$nugetDirectory=Test-Path -Path $nugetPath
 	if ($nugetDirectory -eq $false)
@@ -95,6 +95,7 @@ function AddDependencies()
 			[xml]$nuspeckFile=get-content $outputNuspeckPath
 			foreach($item in $packagesConfigXml.packages.ChildNodes)
 			{
+				if ($item.Id -eq "NugetPT") { continue}
 				$elem = $nuspeckFile.CreateElement('dependency')
 				$elem.SetAttribute('id',$item.Id)
 				$elem.SetAttribute('version',$item.Version)
@@ -173,6 +174,7 @@ function DownloadLatestNuget($nugetExePath)
 
 function ProcessProjects()
 {
+	$project=$null
     $projects=FindAllNugetMetadataPreparedProjects
     foreach($nugetProjectFile in $projects)
     {
@@ -181,7 +183,18 @@ function ProcessProjects()
     }
 }
 
+function CreateNugets()
+{
+
+}
+
+function CreateNugetsAndPushToRepository()
+{
+    
+}
 
 clear
-cd D:\trash\ClassLibrary11\Project2\
+#cd D:\trash\ClassLibrary11\Project2\
+$solutionDir=FindSolutionDirectory
+cd $solutionDir
 ProcessProjects

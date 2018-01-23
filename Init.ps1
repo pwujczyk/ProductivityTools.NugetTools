@@ -28,10 +28,16 @@ function AddFileToSolutionFolder($SolutionFolder, $File)
     }
 }
 
+function GetSolution()
+{
+	$vsSolution = Get-Interface $dte.Solution ([EnvDTE80.Solution2])
+    return $vsSolution
+}
+
 function AddNugetSolutionFolder()
 {
     Write-Host "Adding .nuget directory to solution"
-    $vsSolution = Get-Interface $dte.Solution ([EnvDTE80.Solution2])
+    $vsSolution = GetSolution
     $vsProject = $vsSolution.AddSolutionFolder(".nuget")
     Write-Host ".nuget directory to solution added"
     return $vsProject
@@ -40,16 +46,36 @@ function AddNugetSolutionFolder()
 function AddFileToSolutionFolder($vsProject,[string]$fileName)
 {  
     $projectItems = Get-Interface $vsProject.ProjectItems ([EnvDTE.ProjectItems])
-    $solutionPath = Split-Path -Path $vsSolution.FullName
+	
+    $solutionPath = GetSolutionPath
     $configurationxmlPath=Join-Path  $solutionPath $fileName
     Write-Host "Adding $configurationxmlPath to solution"
     $projectItems.AddFromFile($configurationxmlPath)
 }
+
+function GetSolutionPath()
+{
+	$vsSolution = GetSolution
+    $solutionPath = Split-Path -Path $vsSolution.FullName
+	return $solutionPath
+}
+
+#I don't know why (havent found any explanation) in nuget you cannot put nuspeck file
+function RenameNuspeckFile()
+{
+	$solutionPath = GetSolutionPath
+    $nuspeckFilePathSource=Join-Path  $solutionPath "\.nuget\NugetMetadata.nuspec_"
+	$nuspeckFilePathDest=Join-Path  $solutionPath "\.nuget\NugetMetadata.nuspec"
+	Rename-Item -LiteralPath $nuspeckFilePathSource -NewName $nuspeckFilePathDest
+	
+}
+
 function AddSolutionFolder()
 {
     $vsProject=AddNugetSolutionFolder
     AddFileToSolutionFolder $vsProject "\.nuget\NugetConfiguration.xml" 
-    AddFileToSolutionFolder $vsProject "\.nuget\NugetMetadata.xml"
+	RenameNuspeckFile "\.nuget\NugetMetadata.nuspec"
+    AddFileToSolutionFolder $vsProject "\.nuget\NugetMetadata.nuspec"
 }
 
 $currentPath=CurrentPath
