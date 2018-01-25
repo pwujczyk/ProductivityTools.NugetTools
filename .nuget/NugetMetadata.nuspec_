@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0"?>
 <package >
   <metadata>
-    <id>IoCAutofacManager</id>
-    <version>2</version>
+    <id>ProductivityTooolsProject</id>
+    <version>0.0.1</version>
     <authors>Pawel Wujczyk</authors>
     <owners>Pawel Wujczyk</owners>
     <licenseUrl>http://LICENSE_URL_HERE_OR_DELETE_THIS_LINE</licenseUrl>

@@ -6,6 +6,9 @@ function ScriptPath()
 }
 
 
-write-host "init"
+clear
+write-host "NugetPTRunner"
 $scriptPath=ScriptPath
-Import-Module "$scriptPath\NugetPTModule.psm1"
+cd $scriptPath
+. .\NugetPTBody.ps1
+CreateNugets

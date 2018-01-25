@@ -9,20 +9,31 @@ function CurrentPath()
 #it finds folder where .nuget file is stored
 function FindSolutionDirectory($path)
 {
+	Write-Host "Finding solution file (sln) in directory $path"
     if ($path -eq $null)
     {
         $path = CurrentPath
     }
+	
+	if ($path -match "\\packages\\") 
+	{
+		Write-Host "Current path contains packages in directory name lets go out of it [$path]"
+		$path=Split-Path $path
+		return $(FindSolutionDirectory $path)
+	}
+	
     #Write-Host "FindSolutionDirectory $path"
     $nugetPath="$path\.nuget"
 	$nugetDirectory=Test-Path -Path $nugetPath
 	if ($nugetDirectory -eq $false)
 	{
+		Write-Host "Current path doesn't contain sln file lets search upper [$path]"
 		$path=Split-Path $path
-		FindSolutionDirectory $path
+		return $(FindSolutionDirectory $path)
 	}
 	else
 	{
+		Write-Host "Solution directory: $path"
 		return $path
 	}
 }
@@ -32,7 +43,7 @@ function FindAllNugetMetadataPreparedProjects()
 {
     $projectFileList=@()
     $solutionDirectory=FindSolutionDirectory
-    $allNugetMetadata=Get-ChildItem -Recurse -Path "$solutionDirectory\*.nuspec" |where {$_.DirectoryName -notmatch ".nuget"}
+    $allNugetMetadata=Get-ChildItem -Recurse -Path "$solutionDirectory\*.nuspec" |where {$_.DirectoryName -notcontains ".nuget"}
     foreach($nugetMetadataDirectory in $allNugetMetadata)
     {
         $projectFile=Get-ChildItem $nugetMetadataDirectory.DirectoryName -Filter *.csproj
@@ -146,7 +157,9 @@ function CreateNugetFile()
     param($outputNuspeckPath)
 	$nugetExePath =CheckNugetExe
 	$outputNugetDirectoryPath=$(get-item $outputNuspeckPath).DirectoryName
-	Invoke-Expression -Command "$nugetExePath pack $outputNuspeckPath -OutputDirectory $outputNugetDirectoryPath"
+	$command="$nugetExePath pack $outputNuspeckPath -OutputDirectory $outputNugetDirectoryPath"
+	Write-Host "invoking command $command"
+	Invoke-Expression -Command $command
 }
 
 function GetNugetExePath()
@@ -176,6 +189,13 @@ function ProcessProjects()
 {
 	$project=$null
     $projects=FindAllNugetMetadataPreparedProjects
+	$projectsCount=$projects.Length
+	Write-Host "Found $projectsCount projects ready to be nuspecked"
+	if ($projectsCount -eq 0)
+	{
+		Write-Host "Haven't found any project to be nuspecked, maybe you forgot to copy NugetMetadata.nuspec to your project?"
+	}
+	
     foreach($nugetProjectFile in $projects)
     {
         Write-Host "Processing Project $($nugetProjectFile.ProjectFile.FullName)"
@@ -185,7 +205,10 @@ function ProcessProjects()
 
 function CreateNugets()
 {
-
+	Write-Host "CreateNugetStarted"
+	#$solutionDir=FindSolutionDirectory
+	#cd $solutionDir
+	ProcessProjects
 }
 
 function CreateNugetsAndPushToRepository()
@@ -193,8 +216,4 @@ function CreateNugetsAndPushToRepository()
     
 }
 
-clear
-#cd D:\trash\ClassLibrary11\Project2\
-$solutionDir=FindSolutionDirectory
-cd $solutionDir
-ProcessProjects
+
