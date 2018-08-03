@@ -43,15 +43,17 @@ function FindAllNugetMetadataPreparedProjects()
 {
     $projectFileList=@()
     $solutionDirectory=FindSolutionDirectory
-    $allNugetMetadata=Get-ChildItem -Recurse -Path "$solutionDirectory\*.nuspec" |where {$_.DirectoryName -notcontains ".nuget"}
+    $allNugetMetadata=Get-ChildItem -Recurse -Path "$solutionDirectory\*.nuspec" #|where {$_.DirectoryName -notmatch "\.nuget"}
     foreach($nugetMetadataDirectory in $allNugetMetadata)
     {
         $projectFile=Get-ChildItem $nugetMetadataDirectory.DirectoryName -Filter *.csproj
-        $projectFileList += @{'ProjectFile'=$projectFile;'NugetMetaDataPath'=$nugetMetadataDirectory}
+		if ($projectFile -ne $null)
+		{
+        	$projectFileList += @{'ProjectFile'=$projectFile;'NugetMetaDataPath'=$nugetMetadataDirectory}
+		}
     }
     return $projectFileList
 }
-
 function AddFilesNode()
 {
     param($outputNuspeckPath)
