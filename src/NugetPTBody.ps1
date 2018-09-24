@@ -108,7 +108,7 @@ function AddDependencies()
 			[xml]$nuspeckFile=get-content $outputNuspeckPath
 			foreach($item in $packagesConfigXml.packages.ChildNodes)
 			{
-				if ($item.Id -eq "NugetPT") { continue}
+				if ($item.Id -eq "ProductivityTools.NugetPT") { continue}
 				$elem = $nuspeckFile.CreateElement('dependency')
 				$elem.SetAttribute('id',$item.Id)
 				$elem.SetAttribute('version',$item.Version)

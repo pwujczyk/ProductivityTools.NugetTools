@@ -12,7 +12,7 @@ function CreateNugetDirectory($path)
 {
     Write-Host "Create NugetDirectory $path"
     $solutionDirectory=FindSolutionDirectory($path)
-    Copy-Item -Path "$path\.nuget" -Destination $solutionDirectory -Recurse
+    Copy-Item -Path "$path\.nuget" -Destination $solutionDirectory -Recurse -Force
 }
 function AddFileToSolutionFolder($SolutionFolder, $File)
 {
