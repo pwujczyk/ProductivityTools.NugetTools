@@ -38,9 +38,19 @@ function AddNugetSolutionFolder()
 {
     Write-Host "Adding .nuget directory to solution"
     $vsSolution = GetSolution
-    $vsProject = $vsSolution.AddSolutionFolder(".nuget")
-    Write-Host ".nuget directory to solution added"
-    return $vsProject
+	$vsProject=$vsSolution.Projects |? {$_.Name -eq '.nuget'}
+	
+	if($vsProject -eq $null)
+	{
+		$vsProject = $vsSolution.AddSolutionFolder(".nuget")
+		Write-Host ".nuget directory to solution added"	 
+	}
+	else
+	{
+		Write-Host ".nuget directory already exists"
+	}
+	return $vsProject
+   
 }
 
 function AddFileToSolutionFolder($vsProject,[string]$fileName)
@@ -66,8 +76,11 @@ function RenameNuspeckFile()
 	$solutionPath = GetSolutionPath
     $nuspeckFilePathSource=Join-Path  $solutionPath "\.nuget\NugetMetadata.nuspec_"
 	$nuspeckFilePathDest=Join-Path  $solutionPath "\.nuget\NugetMetadata.nuspec"
-	Rename-Item -LiteralPath $nuspeckFilePathSource -NewName $nuspeckFilePathDest
-	
+	$destExitsts=Test-Path $nuspeckFilePathDest
+	if ($destExitsts -eq $false)
+	{
+		Rename-Item -LiteralPath $nuspeckFilePathSource -NewName $nuspeckFilePathDest
+	}
 }
 
 function AddSolutionFolder()
