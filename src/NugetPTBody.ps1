@@ -84,18 +84,26 @@ function ProcessDirectory($outputNuspeckPath,$directory, $assemblyName, $targetF
 	$nuspeckFile.Save($outputNuspeckPath)
 }
 
+function CreateOrGetDestinationDirectory()
+{
+	param([string]$projectOutputDirectory)
+	$projectOutputNuspeckPath= $( $projectOutputDirectory.trim('\')+"Nuget")
+    	if ((Test-Path $projectOutputNuspeckPath)-eq $false)
+    	{
+     	New-Item -ItemType Directory -Path $projectOutputNuspeckPath |Out-Null
+    	}
+	return $projectOutputNuspeckPath
+}
+
 function CreateNuspeckInOutputDirectory()
 {
-    param([string]$assemblyName, [string]$projectNuspeckPath,[string]$projectOutputDirectory)
-    #$nuspeckName=split-path $projectNuspeckPath -Leaf
-    $projectOutputNuspeckPath= $( $projectOutputDirectory.trim('\')+"Nuget")
-    if ((Test-Path $projectOutputNuspeckPath)-eq $false)
-    {
-        New-Item -ItemType Directory -Path $projectOutputNuspeckPath |Out-Null
-    }
+    param([string]$projectNuspeckPath,[string]$projectOutputDirectory)
+    
+    $projectOutputNuspeckPath = CreateOrGetDestinationDirectory $projectOutputDirectory
+
     $nuspeckDestination=Join-Path $projectOutputNuspeckPath "$assemblyName.nuspec"
-   Copy-Item $projectNuspeckPath $nuspeckDestination -Force |Out-Null
-   return $nuspeckDestination
+    Copy-Item $projectNuspeckPath $nuspeckDestination -Force |Out-Null
+    return $nuspeckDestination
 }
 
 function AddDependencies()
@@ -120,43 +128,66 @@ function AddDependencies()
 		}		
 }
 
+function GetProjectProperties()
+{
+  	param($projectPath,$config)
+	$obj = New-Object PSObject
+	
+	Write-Host $projectPath
+	$csprojFullPath=$($projectPath.FullName)
+	$csprojDirectoryPath=(Get-ChildItem $csprojFullPath).Directory
+	$csproj = [xml](cat $csprojFullPath)
+	Add-Member -InputObject $obj -MemberType NoteProperty -Name csproj -Value $csproj
+	
+	$ns = @{dns = 'http://schemas.microsoft.com/developer/msbuild/2003'}
+	Add-Member -InputObject $obj -MemberType NoteProperty -Name ns -Value $ns
+	
+	$assemblyName = $csproj | select-xml -xpath '/dns:Project/dns:PropertyGroup/dns:AssemblyName' -Namespace $ns
+	Add-Member -InputObject $obj -MemberType NoteProperty -Name AssemblyName -Value $assemblyName
+	
+	$targetFrameworkVersion=$csproj | select-xml -xpath '/dns:Project/dns:PropertyGroup/dns:TargetFrameworkVersion' -Namespace $ns
+	Add-Member -InputObject $obj -MemberType NoteProperty -Name targetFrameworkVersion -Value $targetFrameworkVersion
+	
+	$outputXPath = "/dns:Project/dns:PropertyGroup[contains(@Condition, `""+$config+"`")]/dns:OutputPath"
+	$outputPath=$csproj | select-xml -xpath $outputXPath -Namespace $ns
+	$outputProjectFullPath=[System.IO.Path]::Combine($csprojDirectoryPath,$outputPath)
+	Add-Member -InputObject $obj -MemberType NoteProperty -Name outputProjectFullPath -Value $outputProjectFullPath
+	
+	return $obj
+}
+
 function AddProjectDlls($nugetMetaDataPath, $projectPath,$config, $outputNuspeckPath)
 {
-		Write-Host $projectPath
-		$csprojFullPath=$($projectPath.FullName)
-		$csprojDirectoryPath=(Get-ChildItem $csprojFullPath).Directory
-		$csproj = [xml](cat $csprojFullPath)
-        $ns = @{dns = 'http://schemas.microsoft.com/developer/msbuild/2003'}
-        $assemblyName = $csproj | select-xml -xpath '/dns:Project/dns:PropertyGroup/dns:AssemblyName' -Namespace $ns
-		$targetFrameworkVersion=$csproj | select-xml -xpath '/dns:Project/dns:PropertyGroup/dns:TargetFrameworkVersion' -Namespace $ns
-		$outputXPath = "/dns:Project/dns:PropertyGroup[contains(@Condition, `""+$config+"`")]/dns:OutputPath"
-		$outputPath=$csproj | select-xml -xpath $outputXPath -Namespace $ns
-        $outputProjectFullPath=[System.IO.Path]::Combine($csprojDirectoryPath,$outputPath)
+	$project=GetProjectProperties $projectPath $config
+	$outputProjectFullPath=$project.outputProjectFullPath
+	$assemblyName=$project.assemblyName
+	$targetFrameworkVersion=$project.targetFrameworkVersion
+	$ns=$project.ns
+	$csproj=$project.csproj
+  
+     if ($outputNuspeckPath -eq $null)
+     {
+     	$outputNuspeckPath=CreateNuspeckInOutputDirectory $($project.assemblyName) $nugetMetaDataPath $outputProjectFullPath
+     }
+	ProcessDirectory $outputNuspeckPath $outputProjectFullPath $assemblyName $targetFrameworkVersion
         
-        if ($outputNuspeckPath -eq $null)
-        {
-            $outputNuspeckPath=CreateNuspeckInOutputDirectory $assemblyName $nugetMetaDataPath $outputProjectFullPath
-        }
-		ProcessDirectory $outputNuspeckPath $outputProjectFullPath $assemblyName $targetFrameworkVersion
-        
-        AddDependencies $csprojDirectoryPath  $outputNuspeckPath
+     AddDependencies $csprojDirectoryPath  $outputNuspeckPath
 
-        $projectReferences=$csproj | select-xml -XPath '/dns:Project/dns:ItemGroup/dns:ProjectReference/@Include' -Namespace $ns
-        foreach($referencedProject in $projectReferences)
-        {
-            $referencedShortPath=$projectReferences.Node.Value
-            $projectFullPath=Get-ChildItem $(join-path $projectPath.DirectoryName $referencedShortPath)
-            Write-Host "$projectFullPath"
-            AddProjectDlls $nugetMetaDataPath $projectFullPath $config $outputNuspeckPath
-        }
+     $projectReferences=$csproj | select-xml -XPath '/dns:Project/dns:ItemGroup/dns:ProjectReference/@Include' -Namespace $ns
+     foreach($referencedProject in $projectReferences)
+     {
+          $referencedShortPath=$projectReferences.Node.Value
+          $projectFullPath=Get-ChildItem $(join-path $projectPath.DirectoryName $referencedShortPath)
+          Write-Host "$projectFullPath"
+          AddProjectDlls $nugetMetaDataPath $projectFullPath $config $outputNuspeckPath
+     }
         
-        CreateNugetFile $outputNuspeckPath
-
+     CreateNugetFile $outputNuspeckPath
 }
 
 function CreateNugetFile()
 {
-    param($outputNuspeckPath)
+     param($outputNuspeckPath)
 	$nugetExePath =CheckNugetExe
 	$outputNugetDirectoryPath=$(get-item $outputNuspeckPath).DirectoryName
 	$command="$nugetExePath pack $outputNuspeckPath -OutputDirectory $outputNugetDirectoryPath"
@@ -187,10 +218,10 @@ function DownloadLatestNuget($nugetExePath)
 }
 
 
-function ProcessProjects()
+function ProcessProjects($config)
 {
 	$project=$null
-    $projects=FindAllNugetMetadataPreparedProjects
+     $projects=FindAllNugetMetadataPreparedProjects
 	$projectsCount=$projects.Length
 	Write-Host "Found $projectsCount projects ready to be nuspecked"
 	if ($projectsCount -eq 0)
@@ -201,7 +232,56 @@ function ProcessProjects()
     foreach($nugetProjectFile in $projects)
     {
         Write-Host "Processing Project $($nugetProjectFile.ProjectFile.FullName)"
-        AddProjectDlls $($nugetProjectFile.NugetMetaDataPath) $($nugetProjectFile.ProjectFile) "Debug"
+        AddProjectDlls $($nugetProjectFile.NugetMetaDataPath) $($nugetProjectFile.ProjectFile) $config
+    }
+}
+
+function PushNugetsToRepository($nugetMetaDataPath,$projectPath,$config, $repositoryPath)
+{
+	$project=GetProjectProperties $projectPath $config
+	$outputProjectFullPath=$project.outputProjectFullPath
+	$projectOutputNuspeckPath = CreateOrGetDestinationDirectory $outputProjectFullPath
+	$nugetPath=Get-ChildItem "$projectOutputNuspeckPath\*.nupkg"
+	
+	PushNuget $nugetPath $repositoryPath
+	
+}
+
+function PushNuget()
+{
+	param($nugetPath,$repositoryPath)
+	
+	$nugetExePath=CheckNugetExe
+	
+	if ($repositoryPath -ne $nugetDirectory)
+	{
+		$destRepository=$repositoryPath
+	}
+	else
+	{
+		$destRepository="https://api.nuget.org/v3/index.json"	
+	}
+	
+	$command="$nugetExePath push $nugetPath -Source $destRepository"
+	Write-Host "invoking command $command"
+	Invoke-Expression -Command $command
+}
+
+function ProcessProjectsForPushingNugets($config, $repositoryPath)
+{
+	$project=$null
+     $projects=FindAllNugetMetadataPreparedProjects
+	$projectsCount=$projects.Length
+	Write-Host "Found $projectsCount projects which could push nugets"
+	if ($projectsCount -eq 0)
+	{
+		Write-Host "Haven't found any project which could generate nuget, maybe you forgot to copy NugetMetadata.nuspec to your project?"
+	}
+	
+    foreach($nugetProjectFile in $projects)
+    {
+        Write-Host "Processing Project $($nugetProjectFile.ProjectFile.FullName)"
+        PushNugetsToRepository $($nugetProjectFile.NugetMetaDataPath) $($nugetProjectFile.ProjectFile) $config $repositoryPath
     }
 }
 
@@ -210,12 +290,22 @@ function CreateNugets()
 	Write-Host "CreateNugetStarted"
 	#$solutionDir=FindSolutionDirectory
 	#cd $solutionDir
-	ProcessProjects
+	ProcessProjects "Debug"
 }
 
-function CreateNugetsAndPushToRepository()
+function PushNugets($repositoryPath)
 {
-    
+	ProcessProjectsForPushingNugets "Debug"
 }
+
+function SetApiKey([string]$apiKey)
+{
+	$nugetExePath =CheckNugetExe
+	$command="nuget setApiKey $apiKey"
+	Write-Host "invoking command $command"
+	Invoke-Expression -Command $command
+}
+
+
 
 

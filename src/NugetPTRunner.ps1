@@ -11,4 +11,6 @@ write-host "NugetPTRunner"
 $scriptPath=ScriptPath
 cd $scriptPath
 . .\NugetPTBody.ps1
-CreateNugets
+#CreateNugets
+
+PushNugets
