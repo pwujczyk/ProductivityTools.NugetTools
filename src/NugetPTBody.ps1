@@ -167,7 +167,7 @@ function AddProjectDlls($nugetMetaDataPath, $projectPath,$config, $outputNuspeck
   
      if ($outputNuspeckPath -eq $null)
      {
-     	$outputNuspeckPath=CreateNuspeckInOutputDirectory $($project.assemblyName) $nugetMetaDataPath $outputProjectFullPath
+     	$outputNuspeckPath=CreateNuspeckInOutputDirectory $nugetMetaDataPath $outputProjectFullPath
      }
 	ProcessDirectory $outputNuspeckPath $outputProjectFullPath $assemblyName $targetFrameworkVersion
         
@@ -241,7 +241,7 @@ function PushNugetsToRepository($nugetMetaDataPath,$projectPath,$config, $reposi
 	$project=GetProjectProperties $projectPath $config
 	$outputProjectFullPath=$project.outputProjectFullPath
 	$projectOutputNuspeckPath = CreateOrGetDestinationDirectory $outputProjectFullPath
-	$nugetPath=Get-ChildItem "$projectOutputNuspeckPath\*.nupkg"
+	$nugetPath=Get-ChildItem "$projectOutputNuspeckPath\*.nupkg"  |select -Last 1
 	
 	PushNuget $nugetPath $repositoryPath
 	
@@ -295,13 +295,13 @@ function CreateNugets()
 
 function PushNugets($repositoryPath)
 {
-	ProcessProjectsForPushingNugets "Debug"
+	ProcessProjectsForPushingNugets "Debug" $repositoryPath
 }
 
 function SetApiKey([string]$apiKey)
 {
 	$nugetExePath =CheckNugetExe
-	$command="nuget setApiKey $apiKey"
+	$command="$nugetExePath setApiKey $apiKey"
 	Write-Host "invoking command $command"
 	Invoke-Expression -Command $command
 }
