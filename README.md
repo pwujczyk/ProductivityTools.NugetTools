@@ -25,7 +25,7 @@ During installation Package Manager downloads Nuget from repository and extracts
 
 ## Install.ps1
 
-It performs set of steps to prepare solution to be ‘NugetPT ready’
+It performs set of steps to prepare solution to be _NugetPT ready_
 
 ![Flow](Images/Flow.png)
 
@@ -108,7 +108,7 @@ Attempting to build package from 'ClassLibrary17.nuspec'.
 Successfully created package 'D:\trash\ClassLibrary17\ClassLibrary17\bin\DebugNuget\MyCoolProject.0.0.1.nupkg'.
 ```
 
-Module is very “chatty” to help in debugging.
+Module is very _chatty_ to help in debugging.
 
 Created nuget can be found in the directory DebugNuget placed on the same level as Debug directory
 
@@ -137,7 +137,7 @@ It is extreamly easy to debug creating nuget module. Go to NugetPT package direc
 To debug Install.ps1 you need to run the Script in Package Manager Console and invoking code there changing it in external text editor.
 
 ## Pushing nugets from Visual Studio
-Module also helps to push nugets to www.nuget.org
+Module also helps to push nugets to nuget.org
 
 First setup ApiKey using
 
