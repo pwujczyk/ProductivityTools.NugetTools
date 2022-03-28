@@ -27,19 +27,19 @@ During installation Package Manager downloads Nuget from repository and extracts
 
 It performs set of steps to prepare solution to be ‘NugetPT ready’
 
-![Flow](Images\Flow.png)
+![Flow](Images/Flow.png)
 
 After the process occurs in Visual Studio we should see following structure.
 
-![VSPRojectView](Images\VSPRojectView.png)
+![VSPRojectView](Images/VSPRojectView.png)
 
 At this moment in the Package Manager Console it should be option to create nugets. But we need to perform additional action to be able to create packages.
 
-![PackageManageConsole](Images\PackageManageConsole.png)
+![PackageManageConsole](Images/PackageManageConsole.png)
 
 To be able to create nugets copy NugetMetadata.nuspec to the project which should generate nuget. Next update file according to requirements.
 
-![nuspeck](Images\nuspeck.png)
+![nuspeck](Images/nuspeck.png)
 
 Now Create-Nugets command can be invoked and Nuget should be created (don’t forget to build project!)
 
@@ -118,17 +118,17 @@ Created nuget can be found in the directory DebugNuget placed on the same level 
 
 If our project references different project or have his own dependencies those are also reflected in the final nuget.
 
-![Reference](Images\Reference.png)
+![Reference](Images/Reference.png)
 Previous configuration will result in following nuget:
 
-![ReferenceNuget](Images\ReferenceNuget.png)
+![ReferenceNuget](Images/ReferenceNuget.png)
 
 ## Couple nugets from one project
 Adding NugetMetadata.nuspec to two projects in one solution will result in two nugets.
 
 ## General nuget creation process
 
-![GeneralProcess](Images\GeneralProcess.png)
+![GeneralProcess](Images/GeneralProcess.png)
 
 
 ## Debugging
