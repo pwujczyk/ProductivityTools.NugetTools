@@ -112,7 +112,7 @@ Module is very “chatty” to help in debugging.
 
 Created nuget can be found in the directory DebugNuget placed on the same level as Debug directory
 
-![Nuget](Images\Nuget.png)
+![Nuget](Images/Nuget.png)
 
 ## Project which references different project
 
