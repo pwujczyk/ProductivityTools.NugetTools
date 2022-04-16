@@ -14,6 +14,8 @@
 
 NugetPT is nuget which allows to create nugets from projects in the solution. It is designed for .NET application, currently .NET standard and .NET core are crating nugets automatically.
 
+<!--more-->
+
 
 ## Installation
 Nuget can be installed like any other using command
